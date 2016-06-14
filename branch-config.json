@@ -1,0 +1,14 @@
+{
+  "develop": {
+        "maxCount": -1,
+	"maxAge": 31
+    },
+  "master": {
+        "maxCount": -1,
+        "maxAge": -1
+  },
+  "*": {
+        "maxCount": -1,
+        "maxAge": 31
+  }
+}
