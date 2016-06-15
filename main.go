@@ -145,7 +145,7 @@ func listBuildsByPipelines(builds *buildkite.BuildsService, pipeline buildkite.P
             }
             builds, resp, err := builds.ListByPipeline(housekeepConfig.orgSlug, *pipeline.Name, &opts)
             if housekeepConfig.isInfo() {
-                log.Printf("Builds page %d has %d builds, next page is %d", page, len(builds), resp.NextPage)
+                log.Printf("Builds for %s page %d has %d builds, next page is %d", *pipeline.Name, page, len(builds), resp.NextPage)
             }
             return builds, resp.NextPage, err
         },
@@ -158,8 +158,7 @@ func (build *Build) CheckAndHousekeep(key string, pipelineName string, m map[str
         log.Printf(" Start matching for %s.", *build.Branch)
     }
 
-    match := false
-    var matchedConfig ArtifactConfig
+    var matchedConfig *ArtifactConfig
     var matchPriority int
     for k, _ := range housekeepConfig.branchConfig {
         match, _ := regexp.MatchString(k, *build.Branch)
@@ -167,14 +166,13 @@ func (build *Build) CheckAndHousekeep(key string, pipelineName string, m map[str
             log.Printf("  Checking %s against %s. Matches %t, priority %d", k, *build.Branch, match, housekeepConfig.branchConfig[k].MatchPriority)
         }
         if match && housekeepConfig.branchConfig[k].MatchPriority > matchPriority {
-            match = true
-            matchedConfig = *housekeepConfig.branchConfig[k]
+            matchedConfig = housekeepConfig.branchConfig[k]
             matchPriority = housekeepConfig.branchConfig[k].MatchPriority
         }
     }
 
-    if match {
-        build.Housekeep(key, pipelineName, matchedConfig, m[key], housekeepConfig)
+    if matchedConfig != nil {
+        build.Housekeep(key, pipelineName, *matchedConfig, m[key], housekeepConfig)
     }
 }
 
@@ -192,8 +190,8 @@ func (build *Build) Housekeep(key string, pipelineName string, artifactConfig Ar
     }
 
     if delete {
-        if housekeepConfig.isVerbose() {
-            log.Printf("  Build %d of branch %s, project %s will be deleted. %d", buildCount, *build.Branch, pipelineName, *build.Number)
+        if housekeepConfig.isInfo() {
+            log.Printf("  Artifacts for build %d of branch %s, project %s will be deleted. Build no. %d", buildCount, *build.Branch, pipelineName, *build.Number)
         }
         for _, job := range build.Jobs {
             DeleteS3Folder(*job.ID, housekeepConfig)
