@@ -1,21 +1,29 @@
 
 This project deletes old buildkite artifacts stored in S3.
 
-Configure the policy of branches in the buildkite pipelines using a json file. If the branch isn't matched it will default to the policy defined with *.
+Configure the policy of branches in the buildkite pipelines using a json file. The branch is a regexp and the matching policy with the highest matchPriority is used.
 Here's an example:
 ```json
 {
   "develop": {
-        "maxCount": 7,
-        "maxAge": 14
-    },
-  "master": {
-        "maxCount": -1,
-        "maxAge": -1
+    "matchPriority": 10,
+    "maxCount": -1,
+    "maxAge": 31
   },
-  "*": {
-        "maxCount": 1,
-        "maxAge": 14
+  "master": {
+    "matchPriority": 10,
+    "maxCount": -1,
+    "maxAge": -1
+  },
+  "feature/.*": {
+    "matchPriority": 10,
+    "maxCount": 1,
+    "maxAge": -1
+  },
+  ".*": {
+    "matchPriority": 0,
+    "maxCount": -1,
+    "maxAge": 31
   }
 }
 ```

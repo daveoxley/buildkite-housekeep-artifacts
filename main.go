@@ -8,6 +8,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "time"
+    "regexp"
 )
 
 type HousekeepConfig struct {
@@ -20,8 +21,9 @@ type HousekeepConfig struct {
 }
 
 type ArtifactConfig struct {
-    MaxAge   int    `json:"maxAge"`
-    MaxCount int    `json:"maxCount"`
+    MatchPriority int    `json:"matchPriority"`
+    MaxAge        int    `json:"maxAge"`
+    MaxCount      int    `json:"maxCount"`
 }
 
 type Build buildkite.Build
@@ -152,10 +154,27 @@ func listBuildsByPipelines(builds *buildkite.BuildsService, pipeline buildkite.P
 
 func (build *Build) CheckAndHousekeep(key string, pipelineName string, m map[string]int, housekeepConfig HousekeepConfig) {
     m[key]++
-    if housekeepConfig.branchConfig[*build.Branch] != nil {
-        build.Housekeep(key, pipelineName, *housekeepConfig.branchConfig[*build.Branch], m[key], housekeepConfig)
-    } else if housekeepConfig.branchConfig["*"] != nil {
-        build.Housekeep(key, pipelineName, *housekeepConfig.branchConfig["*"], m[key], housekeepConfig)
+    if housekeepConfig.isVerbose() {
+        log.Printf(" Start matching for %s.", *build.Branch)
+    }
+
+    match := false
+    var matchedConfig ArtifactConfig
+    var matchPriority int
+    for k, _ := range housekeepConfig.branchConfig {
+        match, _ := regexp.MatchString(k, *build.Branch)
+        if housekeepConfig.isVerbose() {
+            log.Printf("  Checking %s against %s. Matches %t, priority %d", k, *build.Branch, match, housekeepConfig.branchConfig[k].MatchPriority)
+        }
+        if match && housekeepConfig.branchConfig[k].MatchPriority > matchPriority {
+            match = true
+            matchedConfig = *housekeepConfig.branchConfig[k]
+            matchPriority = housekeepConfig.branchConfig[k].MatchPriority
+        }
+    }
+
+    if match {
+        build.Housekeep(key, pipelineName, matchedConfig, m[key], housekeepConfig)
     }
 }
 

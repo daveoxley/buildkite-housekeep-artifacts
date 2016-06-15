@@ -1,14 +1,22 @@
 {
   "develop": {
-        "maxCount": -1,
-	"maxAge": 31
-    },
-  "master": {
-        "maxCount": -1,
-        "maxAge": -1
+    "matchPriority": 10,
+    "maxCount": -1,
+    "maxAge": 31
   },
-  "*": {
-        "maxCount": -1,
-        "maxAge": 31
+  "master": {
+    "matchPriority": 10,
+    "maxCount": -1,
+    "maxAge": -1
+  },
+  "feature/.*": {
+    "matchPriority": 10,
+    "maxCount": 1,
+    "maxAge": -1
+  },
+  ".*": {
+    "matchPriority": 0,
+    "maxCount": -1,
+    "maxAge": 31
   }
 }
